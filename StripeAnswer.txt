@@ -1,0 +1,10 @@
+Note - > (The answer is also in Readme section 5.)
+
+To handle an application fee, I would start by creating a Stripe Checkout Session from the backend.
+When the user initiates payment, the backend generates a Checkout Session that includes the application ID, the amount, and redirect URLs for success and cancellation. Before redirecting the user, I would store a payment_request entry containing the session ID, application ID, and a status set to “pending”.
+
+The actual success or failure of a payment should never be trusted from the client side, so the system relies on a Stripe webhook.
+I would configure a /stripe/webhook endpoint to listen for checkout.session.completed. When Stripe calls this webhook, I would verify the event signature, then mark the payment_request as “paid” and update the related application’s stage (for example, from “awaiting fee” to “submitted” or “processing”).
+
+If Stripe notifies that the session expired or payment failed, the webhook would update the status accordingly.
+This ensures the payment workflow is accurate even if the user closes their browser midway through checkout.
